@@ -17,7 +17,13 @@ export class Layout {
     app.innerHTML = `
       <div class="admin-layout">
         ${this.renderSidebar()}
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <div class="main-content">
+          <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
           ${content}
         </div>
       </div>
@@ -87,6 +93,28 @@ export class Layout {
   }
 
   private attachSidebarListeners(): void {
+    // Hamburger menu button
+    const hamburgerMenu = document.getElementById('hamburger-menu');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (hamburgerMenu && sidebar) {
+      hamburgerMenu.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        if (overlay) {
+          overlay.classList.toggle('active');
+        }
+      });
+    }
+
+    // Overlay click to close sidebar
+    if (overlay && sidebar) {
+      overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+    }
+
     // Navigation items
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
@@ -94,6 +122,11 @@ export class Layout {
         e.preventDefault();
         const route = item.getAttribute('data-route');
         if (route) {
+          // Close sidebar on mobile when navigating
+          if (window.innerWidth <= 640) {
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('active');
+          }
           this.router.navigate(route);
         }
       });
@@ -103,11 +136,24 @@ export class Layout {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
+        // Close sidebar on mobile
+        if (window.innerWidth <= 640) {
+          if (sidebar) sidebar.classList.remove('open');
+          if (overlay) overlay.classList.remove('active');
+        }
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_email');
         this.router.navigate('/login');
       });
     }
+
+    // Close sidebar on window resize if it becomes desktop size
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 640) {
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
+      }
+    });
   }
 }
 
