@@ -91,6 +91,12 @@ export const adminApi = {
     });
   },
 
+  getDailyRegistrations: async (period: string = '7d') => {
+    return apiRequest(API_ENDPOINTS.DASHBOARD_REGISTRATIONS(period), {
+      method: 'GET',
+    });
+  },
+
   getUsers: async (params?: {
     role?: string;
     status_filter?: string;
@@ -261,6 +267,105 @@ export const adminApi = {
         verification_status: verificationStatus,
         notes: notes || null,
       }),
+    });
+  },
+
+  // Analytics - Revenue
+  getRevenueAnalytics: async () => {
+    return apiRequest(API_ENDPOINTS.REVENUE_ANALYTICS, {
+      method: 'GET',
+    });
+  },
+
+  getDailyRevenue: async (period: string = '7d') => {
+    return apiRequest(API_ENDPOINTS.DAILY_REVENUE(period), {
+      method: 'GET',
+    });
+  },
+
+  getRevenueBreakdown: async () => {
+    return apiRequest(API_ENDPOINTS.REVENUE_BREAKDOWN, {
+      method: 'GET',
+    });
+  },
+
+  // Analytics - Bookings
+  getBookingAnalytics: async () => {
+    return apiRequest(API_ENDPOINTS.BOOKING_ANALYTICS, {
+      method: 'GET',
+    });
+  },
+
+  getDailyBookings: async (period: string = '7d', type: string = 'all') => {
+    return apiRequest(API_ENDPOINTS.DAILY_BOOKINGS(period, type), {
+      method: 'GET',
+    });
+  },
+
+  getBookingComparison: async (period: string = '7d') => {
+    return apiRequest(API_ENDPOINTS.BOOKING_COMPARISON(period), {
+      method: 'GET',
+    });
+  },
+
+  // Analytics - Performance
+  getTractionMetrics: async () => {
+    return apiRequest(API_ENDPOINTS.TRACTION_METRICS, {
+      method: 'GET',
+    });
+  },
+
+  getConversionRates: async () => {
+    return apiRequest(API_ENDPOINTS.CONVERSION_RATES, {
+      method: 'GET',
+    });
+  },
+
+  // Analytics - Top Performers
+  getTopDrivers: async (limit: number = 10, period: string = '30d') => {
+    return apiRequest(API_ENDPOINTS.TOP_DRIVERS(limit, period), {
+      method: 'GET',
+    });
+  },
+
+  getTopCarOwners: async (limit: number = 10, period: string = '30d') => {
+    return apiRequest(API_ENDPOINTS.TOP_CAR_OWNERS(limit, period), {
+      method: 'GET',
+    });
+  },
+
+  getTopClients: async (limit: number = 10, period: string = '30d') => {
+    return apiRequest(API_ENDPOINTS.TOP_CLIENTS(limit, period), {
+      method: 'GET',
+    });
+  },
+
+  // Bookings Management
+  getAdminBookings: async (params?: {
+    type?: string;
+    status?: string;
+    skip?: number;
+    limit?: number;
+    start_date?: string;
+    end_date?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+
+    const queryString = queryParams.toString();
+    return apiRequest(API_ENDPOINTS.ADMIN_BOOKINGS(queryString), {
+      method: 'GET',
+    });
+  },
+
+  getAdminBookingDetail: async (bookingId: number) => {
+    return apiRequest(API_ENDPOINTS.ADMIN_BOOKING_DETAIL(bookingId), {
+      method: 'GET',
     });
   },
 };

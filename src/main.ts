@@ -10,6 +10,11 @@ import { CarOwnersPage } from './pages/car-owners';
 import { CarOwnerDetailPage } from './pages/car-owner-detail';
 import { VehiclesPage } from './pages/vehicles';
 import { VehicleDetailPage } from './pages/vehicle-detail';
+import { RevenueAnalyticsPage } from './pages/revenue-analytics';
+import { BookingsAnalyticsPage } from './pages/bookings-analytics';
+import { PerformanceMetricsPage } from './pages/performance-metrics';
+import { TopPerformersPage } from './pages/top-performers';
+import { BookingsManagementPage } from './pages/bookings-management';
 
 // Initialize router
 const router = Router.getInstance();
@@ -182,6 +187,58 @@ router.addRoute('/vehicles/:id', () => {
   
   const vehicleDetailPage = new VehicleDetailPage(vehicleId);
   vehicleDetailPage.render();
+});
+
+// Analytics Routes
+router.addRoute('/analytics/revenue', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const revenueAnalyticsPage = new RevenueAnalyticsPage();
+  revenueAnalyticsPage.render();
+});
+
+router.addRoute('/analytics/bookings', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const bookingsAnalyticsPage = new BookingsAnalyticsPage();
+  bookingsAnalyticsPage.render();
+});
+
+router.addRoute('/analytics/performance', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const performanceMetricsPage = new PerformanceMetricsPage();
+  performanceMetricsPage.render();
+});
+
+router.addRoute('/analytics/top-performers', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const topPerformersPage = new TopPerformersPage();
+  topPerformersPage.render();
+});
+
+// Bookings Management Route
+router.addRoute('/bookings', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const bookingsManagementPage = new BookingsManagementPage();
+  bookingsManagementPage.render();
 });
 
 // Start router

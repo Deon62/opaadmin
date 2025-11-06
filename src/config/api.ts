@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
   
   // Admin
   DASHBOARD: '/admin/dashboard',
+  DASHBOARD_REGISTRATIONS: (period: string) => `/admin/dashboard/registrations?period=${period}`,
   USERS: '/admin/users',
   PROMOTE_USER: '/admin/promote-user',
   
@@ -49,5 +50,28 @@ export const API_ENDPOINTS = {
   VEHICLES: '/admin/vehicles',
   VEHICLE_DETAIL: (id: number) => `/admin/vehicles/${id}`,
   VEHICLE_VERIFY_DOCUMENTS: (id: number) => `/admin/vehicles/${id}/verify-documents`,
+  
+  // Analytics - Revenue
+  REVENUE_ANALYTICS: '/admin/analytics/revenue',
+  DAILY_REVENUE: (period: string) => `/admin/analytics/revenue/daily?period=${period}`,
+  REVENUE_BREAKDOWN: '/admin/analytics/revenue/breakdown',
+  
+  // Analytics - Bookings
+  BOOKING_ANALYTICS: '/admin/analytics/bookings',
+  DAILY_BOOKINGS: (period: string, type: string) => `/admin/analytics/bookings/daily?period=${period}&type=${type}`,
+  BOOKING_COMPARISON: (period: string) => `/admin/analytics/bookings/comparison?period=${period}`,
+  
+  // Analytics - Performance
+  TRACTION_METRICS: '/admin/analytics/traction',
+  CONVERSION_RATES: '/admin/analytics/conversion',
+  
+  // Analytics - Top Performers
+  TOP_DRIVERS: (limit: number, period: string) => `/admin/analytics/top-drivers?limit=${limit}&period=${period}`,
+  TOP_CAR_OWNERS: (limit: number, period: string) => `/admin/analytics/top-car-owners?limit=${limit}&period=${period}`,
+  TOP_CLIENTS: (limit: number, period: string) => `/admin/analytics/top-clients?limit=${limit}&period=${period}`,
+  
+  // Bookings Management
+  ADMIN_BOOKINGS: (params?: string) => `/admin/bookings${params ? `?${params}` : ''}`,
+  ADMIN_BOOKING_DETAIL: (id: number) => `/admin/bookings/${id}`,
 };
 

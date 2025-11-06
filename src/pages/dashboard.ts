@@ -3,6 +3,8 @@ import { adminApi } from '../services/api';
 
 export class DashboardPage {
   private layout: Layout;
+  private currentPeriod: string = '7d';
+  private chartData: { date: string; count: number }[] = [];
 
   constructor() {
     this.layout = new Layout();
@@ -89,7 +91,7 @@ export class DashboardPage {
 
     this.layout.render(dashboardContent, '/dashboard');
     this.loadDashboardData();
-    this.renderChart();
+    this.loadChartData();
     this.attachChartListeners();
   }
 
@@ -97,11 +99,12 @@ export class DashboardPage {
     // Period button listeners
     const periodButtons = document.querySelectorAll('.period-btn');
     periodButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         periodButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        // Will update chart data based on period when API is connected
-        // const period = btn.getAttribute('data-period');
+        const period = btn.getAttribute('data-period') || '7d';
+        this.currentPeriod = period;
+        await this.loadChartData();
         this.renderChart();
       });
     });
@@ -130,9 +133,19 @@ export class DashboardPage {
       canvas.height = 300;
     }
 
-    // Sample data for 7 days
-    const data = [12, 19, 15, 25, 22, 18, 24];
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    // Use real data from API
+    const data = this.chartData.map(d => d.count);
+    const labels = this.chartData.map(d => d.date);
+    
+    // If no data, show empty state
+    if (data.length === 0 || data.every(v => v === 0)) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#6b7280';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No registration data available', canvas.width / 2, canvas.height / 2);
+      return;
+    }
     
     const padding = 40;
     const chartWidth = canvas.width - (padding * 2);
@@ -252,6 +265,27 @@ export class DashboardPage {
 
     if (result.data) {
       this.updateStats(result.data);
+    }
+  }
+
+  private async loadChartData(): Promise<void> {
+    const result = await adminApi.getDailyRegistrations(this.currentPeriod);
+    
+    if (result.error) {
+      console.error('Failed to load chart data:', result.error);
+      this.chartData = [];
+      return;
+    }
+
+    if (result.data) {
+      const responseData = result.data as any;
+      if (responseData.data && Array.isArray(responseData.data)) {
+        this.chartData = responseData.data;
+      } else {
+        this.chartData = [];
+      }
+    } else {
+      this.chartData = [];
     }
     
     // Re-render chart after a short delay to ensure canvas is ready

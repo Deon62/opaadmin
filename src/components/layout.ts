@@ -42,31 +42,53 @@ export class Layout {
         <div class="sidebar-header">
         </div>
         
-        <nav class="sidebar-nav">
-          <a href="#" data-route="/dashboard" class="nav-item ${this.isActive('/dashboard') ? 'active' : ''}">
-            <span class="nav-text">Dashboard</span>
-          </a>
-          
-          <a href="#" data-route="/users" class="nav-item ${this.isActive('/users') ? 'active' : ''}">
-            <span class="nav-text">Users</span>
-          </a>
-          
-          <a href="#" data-route="/drivers" class="nav-item ${this.isActive('/drivers') ? 'active' : ''}">
-            <span class="nav-text">Drivers</span>
-          </a>
-          
-          <a href="#" data-route="/clients" class="nav-item ${this.isActive('/clients') ? 'active' : ''}">
-            <span class="nav-text">Clients</span>
-          </a>
-          
-          <a href="#" data-route="/car-owners" class="nav-item ${this.isActive('/car-owners') ? 'active' : ''}">
-            <span class="nav-text">Car Owners</span>
-          </a>
-          
-          <a href="#" data-route="/vehicles" class="nav-item ${this.isActive('/vehicles') ? 'active' : ''}">
-            <span class="nav-text">Vehicles</span>
-          </a>
-        </nav>
+            <nav class="sidebar-nav">
+              <a href="#" data-route="/dashboard" class="nav-item ${this.isActive('/dashboard') ? 'active' : ''}">
+                <span class="nav-text">Dashboard</span>
+              </a>
+              
+              <a href="#" data-route="/users" class="nav-item ${this.isActive('/users') ? 'active' : ''}">
+                <span class="nav-text">Users</span>
+              </a>
+              
+              <a href="#" data-route="/drivers" class="nav-item ${this.isActive('/drivers') ? 'active' : ''}">
+                <span class="nav-text">Drivers</span>
+              </a>
+              
+              <a href="#" data-route="/clients" class="nav-item ${this.isActive('/clients') ? 'active' : ''}">
+                <span class="nav-text">Clients</span>
+              </a>
+              
+              <a href="#" data-route="/car-owners" class="nav-item ${this.isActive('/car-owners') ? 'active' : ''}">
+                <span class="nav-text">Car Owners</span>
+              </a>
+              
+              <a href="#" data-route="/vehicles" class="nav-item ${this.isActive('/vehicles') ? 'active' : ''}">
+                <span class="nav-text">Vehicles</span>
+              </a>
+              
+              <div class="nav-section-divider"></div>
+              
+              <a href="#" data-route="/analytics/revenue" class="nav-item ${this.isActive('/analytics/revenue') ? 'active' : ''}">
+                <span class="nav-text">Revenue Analytics</span>
+              </a>
+              
+              <a href="#" data-route="/analytics/bookings" class="nav-item ${this.isActive('/analytics/bookings') ? 'active' : ''}">
+                <span class="nav-text">Bookings Analytics</span>
+              </a>
+              
+              <a href="#" data-route="/analytics/performance" class="nav-item ${this.isActive('/analytics/performance') ? 'active' : ''}">
+                <span class="nav-text">Performance Metrics</span>
+              </a>
+              
+              <a href="#" data-route="/analytics/top-performers" class="nav-item ${this.isActive('/analytics/top-performers') ? 'active' : ''}">
+                <span class="nav-text">Top Performers</span>
+              </a>
+              
+              <a href="#" data-route="/bookings" class="nav-item ${this.isActive('/bookings') ? 'active' : ''}">
+                <span class="nav-text">Bookings Management</span>
+              </a>
+            </nav>
         
         <div class="sidebar-footer">
           <div class="profile-section">
