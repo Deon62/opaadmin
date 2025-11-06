@@ -18,12 +18,14 @@ export class Layout {
       <div class="admin-layout">
         ${this.renderSidebar()}
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
-        <div class="main-content">
+        <nav class="mobile-top-navbar" id="mobile-top-navbar">
           <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle menu">
             <span></span>
             <span></span>
             <span></span>
           </button>
+        </nav>
+        <div class="main-content">
           ${content}
         </div>
       </div>
