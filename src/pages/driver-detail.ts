@@ -1,5 +1,7 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
+import { getDocumentUrl } from '../config/api';
 
 interface DriverDetail {
   id: number;
@@ -220,42 +222,27 @@ export class DriverDetailPage {
     // Verification form
     const verificationForm = document.getElementById('verification-form') as HTMLFormElement;
     if (verificationForm) {
-      verificationForm.addEventListener('submit', (e) => {
+      verificationForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        this.handleVerification();
+        await this.handleVerification();
       });
     }
   }
 
-  private loadDriverDetail(): void {
-    // Mock data - will be replaced with API call
-    const mockDriver: DriverDetail = {
-      id: this.driverId,
-      user_id: 10,
-      email: 'driver1@example.com',
-      first_name: 'John',
-      last_name: 'Doe',
-      phone_number: '+1234567890',
-      date_of_birth: '1990-05-15',
-      gender: 'male',
-      id_number: 'ID123456',
-      dl_number: 'DL789012',
-      dl_category: 'B',
-      dl_issue_date: '2020-01-10',
-      dl_expiry_date: '2025-01-10',
-      id_document_url: 'https://example.com/id-doc.jpg',
-      dl_document_url: 'https://example.com/dl-doc.jpg',
-      selfie_url: 'https://example.com/selfie.jpg',
-      verification_status: 'pending',
-      profile_completeness: 85.5,
-      created_at: '2024-01-15T10:30:00Z',
-      updated_at: '2024-01-20T14:20:00Z'
-    };
+  private async loadDriverDetail(): Promise<void> {
+    const result = await adminApi.getDriverDetail(this.driverId);
+    
+    if (result.error) {
+      const loadingState = document.getElementById('loading-state');
+      if (loadingState) {
+        loadingState.innerHTML = `<div class="empty-state">Error: ${result.error}</div>`;
+      }
+      return;
+    }
 
-    // Simulate API delay
-    setTimeout(() => {
-      this.renderDriverDetail(mockDriver);
-    }, 500);
+    if (result.data) {
+      this.renderDriverDetail(result.data as DriverDetail);
+    }
   }
 
   private renderDriverDetail(driver: DriverDetail): void {
@@ -323,20 +310,26 @@ export class DriverDetailPage {
       return;
     }
 
+    const fullUrl = getDocumentUrl(url);
+    if (!fullUrl) {
+      container.innerHTML = '<div class="no-document">Invalid document URL</div>';
+      return;
+    }
+
     if (isImage) {
       container.innerHTML = `
-        <img src="${url}" alt="${label}" class="document-image" onerror="this.parentElement.innerHTML='<div class=\\'no-document\\'>Failed to load image</div>'">
+        <img src="${fullUrl}" alt="${label}" class="document-image" onerror="this.parentElement.innerHTML='<div class=\\'no-document\\'>Failed to load image</div>'">
       `;
     } else {
       container.innerHTML = `
         <div class="document-link">
-          <a href="${url}" target="_blank" class="btn-link">View Document</a>
+          <a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="btn-link" data-external-link="true">View Document</a>
         </div>
       `;
     }
   }
 
-  private handleVerification(): void {
+  private async handleVerification(): Promise<void> {
     const statusSelect = document.getElementById('verification-status') as HTMLSelectElement;
     const notesTextarea = document.getElementById('verification-notes') as HTMLTextAreaElement;
     const errorDiv = document.getElementById('verification-error');
@@ -345,8 +338,7 @@ export class DriverDetailPage {
     if (!statusSelect || !notesTextarea || !errorDiv || !successDiv) return;
 
     const verificationStatus = statusSelect.value;
-    // Notes will be used when connecting to real API
-    void notesTextarea.value.trim();
+    const notes = notesTextarea.value.trim();
 
     if (!verificationStatus) {
       errorDiv.textContent = 'Please select a verification status';
@@ -359,9 +351,19 @@ export class DriverDetailPage {
     errorDiv.style.display = 'none';
     successDiv.style.display = 'none';
 
-    // Mock API call - will be replaced with real API
-    setTimeout(() => {
-      successDiv.textContent = `Driver verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
+    // Call API
+    const result = await adminApi.verifyDriver(this.driverId, verificationStatus, notes);
+
+    if (result.error) {
+      errorDiv.textContent = result.error;
+      errorDiv.style.display = 'block';
+      successDiv.style.display = 'none';
+      return;
+    }
+
+    if (result.data) {
+      const message = (result.data as any).message;
+      successDiv.textContent = message || `Driver verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
       successDiv.style.display = 'block';
       
       // Update the status badge
@@ -374,7 +376,7 @@ export class DriverDetailPage {
       setTimeout(() => {
         this.loadDriverDetail();
       }, 1500);
-    }, 500);
+    }
   }
 
   private setElementText(id: string, text: string): void {

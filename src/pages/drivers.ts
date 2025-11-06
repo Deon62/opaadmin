@@ -1,5 +1,6 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
 
 interface Driver {
   id: number;
@@ -106,10 +107,10 @@ export class DriversPage {
       let searchTimeout: number;
       searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
-        searchTimeout = window.setTimeout(() => {
+        searchTimeout = window.setTimeout(async () => {
           this.searchQuery = (e.target as HTMLInputElement).value.trim();
           this.currentPage = 1;
-          this.loadDrivers();
+          await this.loadDrivers();
         }, 300);
       });
     }
@@ -117,10 +118,10 @@ export class DriversPage {
     // Verification status filter
     const verificationFilter = document.getElementById('verification-filter') as HTMLSelectElement;
     if (verificationFilter) {
-      verificationFilter.addEventListener('change', (e) => {
+      verificationFilter.addEventListener('change', async (e) => {
         this.verificationStatusFilter = (e.target as HTMLSelectElement).value;
         this.currentPage = 1;
-        this.loadDrivers();
+        await this.loadDrivers();
       });
     }
 
@@ -129,87 +130,54 @@ export class DriversPage {
     const nextBtn = document.getElementById('next-page');
     
     if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
+      prevBtn.addEventListener('click', async () => {
         if (this.currentPage > 1) {
           this.currentPage--;
-          this.loadDrivers();
+          await this.loadDrivers();
         }
       });
     }
 
     if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
+      nextBtn.addEventListener('click', async () => {
         this.currentPage++;
-        this.loadDrivers();
+        await this.loadDrivers();
       });
     }
   }
 
-  private loadDrivers(): void {
+  private async loadDrivers(): Promise<void> {
     const tbody = document.getElementById('drivers-tbody');
     if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="9" class="loading-state">Loading drivers...</td></tr>';
 
-    // Mock data - will be replaced with API call
-    const mockDrivers: Driver[] = [
-      {
-        id: 1,
-        user_id: 10,
-        email: 'driver1@example.com',
-        first_name: 'John',
-        last_name: 'Doe',
-        phone_number: '+1234567890',
-        id_number: 'ID123456',
-        verification_status: 'pending',
-        has_id_document: true,
-        has_dl_document: true,
-        has_selfie: true,
-        profile_completeness: 85.5,
-        created_at: '2024-01-15T10:30:00Z'
-      },
-      {
-        id: 2,
-        user_id: 11,
-        email: 'driver2@example.com',
-        first_name: 'Jane',
-        last_name: 'Smith',
-        phone_number: '+1234567891',
-        id_number: 'ID123457',
-        verification_status: 'verified',
-        has_id_document: true,
-        has_dl_document: true,
-        has_selfie: true,
-        profile_completeness: 100.0,
-        created_at: '2024-01-16T14:20:00Z'
-      },
-      {
-        id: 3,
-        user_id: 12,
-        email: 'driver3@example.com',
-        first_name: 'Bob',
-        last_name: 'Johnson',
-        phone_number: '+1234567892',
-        id_number: 'ID123458',
-        verification_status: 'rejected',
-        has_id_document: true,
-        has_dl_document: false,
-        has_selfie: true,
-        profile_completeness: 60.0,
-        created_at: '2024-01-17T09:15:00Z'
-      }
-    ];
+    // Calculate skip for pagination
+    const skip = (this.currentPage - 1) * this.pageSize;
 
-    // Apply filters
-    let filteredDrivers = mockDrivers;
+    // Call API
+    const result = await adminApi.getDrivers({
+      verification_status: this.verificationStatusFilter || undefined,
+      skip,
+      limit: this.pageSize,
+    });
 
-    if (this.verificationStatusFilter) {
-      filteredDrivers = filteredDrivers.filter(d => d.verification_status === this.verificationStatusFilter);
+    if (result.error) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Error: ${result.error}</td></tr>`;
+      return;
     }
 
+    if (!result.data) {
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No drivers found</td></tr>';
+      return;
+    }
+
+    let drivers: Driver[] = result.data;
+
+    // Apply client-side search filter if needed
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filteredDrivers = filteredDrivers.filter(d => {
+      drivers = drivers.filter(d => {
         const fullName = `${d.first_name || ''} ${d.last_name || ''}`.toLowerCase().trim();
         return (
           d.email.toLowerCase().includes(query) ||
@@ -221,23 +189,22 @@ export class DriversPage {
       });
     }
 
-    // Pagination
-    const totalDrivers = filteredDrivers.length;
-    const totalPages = Math.ceil(totalDrivers / this.pageSize);
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    const endIndex = Math.min(startIndex + this.pageSize, totalDrivers);
-    const paginatedDrivers = filteredDrivers.slice(startIndex, endIndex);
-
     // Update pagination info
-    this.updatePaginationInfo(startIndex + 1, endIndex, totalDrivers, totalPages);
+    const hasMore = drivers.length === this.pageSize;
+    const totalPages = hasMore ? this.currentPage + 1 : this.currentPage;
+    const startIndex = skip + 1;
+    const endIndex = skip + drivers.length;
+    const totalDrivers = hasMore ? endIndex + 1 : endIndex;
+
+    this.updatePaginationInfo(startIndex, endIndex, totalDrivers, totalPages);
 
     // Render drivers
-    if (paginatedDrivers.length === 0) {
+    if (drivers.length === 0) {
       tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No drivers found</td></tr>';
       return;
     }
 
-    tbody.innerHTML = paginatedDrivers.map(driver => `
+    tbody.innerHTML = drivers.map(driver => `
       <tr>
         <td>${driver.id}</td>
         <td>${this.formatName(driver.first_name, driver.last_name)}</td>

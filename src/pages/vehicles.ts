@@ -1,5 +1,6 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
 
 interface Vehicle {
   id: number;
@@ -107,10 +108,10 @@ export class VehiclesPage {
       let searchTimeout: number;
       searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
-        searchTimeout = window.setTimeout(() => {
+        searchTimeout = window.setTimeout(async () => {
           this.searchQuery = (e.target as HTMLInputElement).value.trim();
           this.currentPage = 1;
-          this.loadVehicles();
+          await this.loadVehicles();
         }, 300);
       });
     }
@@ -118,10 +119,10 @@ export class VehiclesPage {
     // Verification status filter
     const verificationFilter = document.getElementById('verification-filter') as HTMLSelectElement;
     if (verificationFilter) {
-      verificationFilter.addEventListener('change', (e) => {
+      verificationFilter.addEventListener('change', async (e) => {
         this.verificationStatusFilter = (e.target as HTMLSelectElement).value;
         this.currentPage = 1;
-        this.loadVehicles();
+        await this.loadVehicles();
       });
     }
 
@@ -130,84 +131,54 @@ export class VehiclesPage {
     const nextBtn = document.getElementById('next-page');
     
     if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
+      prevBtn.addEventListener('click', async () => {
         if (this.currentPage > 1) {
           this.currentPage--;
-          this.loadVehicles();
+          await this.loadVehicles();
         }
       });
     }
 
     if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
+      nextBtn.addEventListener('click', async () => {
         this.currentPage++;
-        this.loadVehicles();
+        await this.loadVehicles();
       });
     }
   }
 
-  private loadVehicles(): void {
+  private async loadVehicles(): Promise<void> {
     const tbody = document.getElementById('vehicles-tbody');
     if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="11" class="loading-state">Loading vehicles...</td></tr>';
 
-    // Mock data - will be replaced with API call
-    const mockVehicles: Vehicle[] = [
-      {
-        id: 1,
-        car_owner_id: 1,
-        make: 'Toyota',
-        model: 'Camry',
-        year: 2020,
-        plate_number: 'ABC-1234',
-        vehicle_type: 'Sedan',
-        documents_verification_status: 'verified',
-        has_registration_document: true,
-        has_insurance_document: true,
-        listing_status: 'ready',
-        created_at: '2024-01-15T10:30:00Z'
-      },
-      {
-        id: 2,
-        car_owner_id: 1,
-        make: 'Honda',
-        model: 'Civic',
-        year: 2021,
-        plate_number: 'XYZ-5678',
-        vehicle_type: 'Sedan',
-        documents_verification_status: 'pending',
-        has_registration_document: true,
-        has_insurance_document: false,
-        listing_status: 'not_ready',
-        created_at: '2024-01-16T14:20:00Z'
-      },
-      {
-        id: 3,
-        car_owner_id: 2,
-        make: 'Ford',
-        model: 'Explorer',
-        year: 2019,
-        plate_number: 'DEF-9012',
-        vehicle_type: 'SUV',
-        documents_verification_status: 'rejected',
-        has_registration_document: true,
-        has_insurance_document: true,
-        listing_status: 'not_ready',
-        created_at: '2024-01-17T09:15:00Z'
-      }
-    ];
+    // Calculate skip for pagination
+    const skip = (this.currentPage - 1) * this.pageSize;
 
-    // Apply filters
-    let filteredVehicles = mockVehicles;
+    // Call API
+    const result = await adminApi.getVehicles({
+      verification_status: this.verificationStatusFilter || undefined,
+      skip,
+      limit: this.pageSize,
+    });
 
-    if (this.verificationStatusFilter) {
-      filteredVehicles = filteredVehicles.filter(v => v.documents_verification_status === this.verificationStatusFilter);
+    if (result.error) {
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Error: ${result.error}</td></tr>`;
+      return;
     }
 
+    if (!result.data) {
+      tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No vehicles found</td></tr>';
+      return;
+    }
+
+    let vehicles: Vehicle[] = result.data;
+
+    // Apply client-side search filter if needed
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filteredVehicles = filteredVehicles.filter(v => {
+      vehicles = vehicles.filter(v => {
         return (
           v.make.toLowerCase().includes(query) ||
           v.model.toLowerCase().includes(query) ||
@@ -219,23 +190,22 @@ export class VehiclesPage {
       });
     }
 
-    // Pagination
-    const totalVehicles = filteredVehicles.length;
-    const totalPages = Math.ceil(totalVehicles / this.pageSize);
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    const endIndex = Math.min(startIndex + this.pageSize, totalVehicles);
-    const paginatedVehicles = filteredVehicles.slice(startIndex, endIndex);
-
     // Update pagination info
-    this.updatePaginationInfo(startIndex + 1, endIndex, totalVehicles, totalPages);
+    const hasMore = vehicles.length === this.pageSize;
+    const totalPages = hasMore ? this.currentPage + 1 : this.currentPage;
+    const startIndex = skip + 1;
+    const endIndex = skip + vehicles.length;
+    const totalVehicles = hasMore ? endIndex + 1 : endIndex;
+
+    this.updatePaginationInfo(startIndex, endIndex, totalVehicles, totalPages);
 
     // Render vehicles
-    if (paginatedVehicles.length === 0) {
+    if (vehicles.length === 0) {
       tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No vehicles found</td></tr>';
       return;
     }
 
-    tbody.innerHTML = paginatedVehicles.map(vehicle => `
+    tbody.innerHTML = vehicles.map(vehicle => `
       <tr>
         <td>${vehicle.id}</td>
         <td>${vehicle.make}</td>

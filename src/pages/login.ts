@@ -1,4 +1,5 @@
 import { Router } from '../router';
+import { authApi } from '../services/api';
 
 export class LoginPage {
   private router: Router;
@@ -69,8 +70,10 @@ export class LoginPage {
       e.preventDefault();
       
       const emailInput = document.getElementById('email') as HTMLInputElement;
+      const passwordInput = document.getElementById('password') as HTMLInputElement;
       
       const email = emailInput.value.trim();
+      const password = passwordInput.value;
 
       // Hide error message
       errorMessage.style.display = 'none';
@@ -81,21 +84,29 @@ export class LoginPage {
       buttonText.style.display = 'none';
       buttonLoader.style.display = 'inline';
 
-      // Simulate login (bypass authentication for now)
-      setTimeout(() => {
-        // For now, just accept any email/password
-        // Store a mock token
-        localStorage.setItem('admin_token', 'mock_jwt_token_' + Date.now());
-        localStorage.setItem('admin_email', email);
+      // Call API
+      const result = await authApi.login(email, password);
 
-        // Reset button state
-        loginButton.disabled = false;
-        buttonText.style.display = 'inline';
-        buttonLoader.style.display = 'none';
+      // Reset button state
+      loginButton.disabled = false;
+      buttonText.style.display = 'inline';
+      buttonLoader.style.display = 'none';
+
+      if (result.error) {
+        // Show error message
+        errorMessage.textContent = result.error;
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      if (result.data) {
+        // Store token and email
+        localStorage.setItem('admin_token', result.data.access_token);
+        localStorage.setItem('admin_email', email);
 
         // Navigate to dashboard
         this.router.navigate('/dashboard');
-      }, 1000);
+      }
     });
   }
 }

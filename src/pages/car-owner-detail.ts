@@ -1,5 +1,7 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
+import { getDocumentUrl } from '../config/api';
 
 interface CarOwnerDetail {
   id: number;
@@ -219,9 +221,9 @@ export class CarOwnerDetailPage {
     // Verification form
     const verificationForm = document.getElementById('verification-form') as HTMLFormElement;
     if (verificationForm) {
-      verificationForm.addEventListener('submit', (e) => {
+      verificationForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        this.handleVerification();
+        await this.handleVerification();
       });
     }
 
@@ -234,34 +236,20 @@ export class CarOwnerDetailPage {
     }
   }
 
-  private loadCarOwnerDetail(): void {
-    // Mock data - will be replaced with API call
-    const mockCarOwner: CarOwnerDetail = {
-      id: this.carOwnerId,
-      user_id: 30,
-      email: 'owner1@example.com',
-      first_name: 'Michael',
-      last_name: 'Johnson',
-      phone_number: '+1234567890',
-      date_of_birth: '1985-07-15',
-      gender: 'male',
-      location: 'Los Angeles',
-      address: '456 Business Ave, Los Angeles, CA 90001',
-      id_number: 'ID123456',
-      id_document_url: 'https://example.com/id-doc.jpg',
-      profile_picture_url: 'https://example.com/profile.jpg',
-      business_name: 'Johnson Car Rentals',
-      business_registration_number: 'BRN789012',
-      verification_status: 'pending',
-      profile_completeness: 90.0,
-      created_at: '2024-01-15T10:30:00Z',
-      updated_at: '2024-01-20T14:20:00Z'
-    };
+  private async loadCarOwnerDetail(): Promise<void> {
+    const result = await adminApi.getCarOwnerDetail(this.carOwnerId);
+    
+    if (result.error) {
+      const loadingState = document.getElementById('loading-state');
+      if (loadingState) {
+        loadingState.innerHTML = `<div class="empty-state">Error: ${result.error}</div>`;
+      }
+      return;
+    }
 
-    // Simulate API delay
-    setTimeout(() => {
-      this.renderCarOwnerDetail(mockCarOwner);
-    }, 500);
+    if (result.data) {
+      this.renderCarOwnerDetail(result.data as CarOwnerDetail);
+    }
   }
 
   private renderCarOwnerDetail(carOwner: CarOwnerDetail): void {
@@ -326,20 +314,26 @@ export class CarOwnerDetailPage {
       return;
     }
 
+    const fullUrl = getDocumentUrl(url);
+    if (!fullUrl) {
+      container.innerHTML = '<div class="no-document">Invalid document URL</div>';
+      return;
+    }
+
     if (isImage) {
       container.innerHTML = `
-        <img src="${url}" alt="${label}" class="document-image" onerror="this.parentElement.innerHTML='<div class=\\'no-document\\'>Failed to load image</div>'">
+        <img src="${fullUrl}" alt="${label}" class="document-image" onerror="this.parentElement.innerHTML='<div class=\\'no-document\\'>Failed to load image</div>'">
       `;
     } else {
       container.innerHTML = `
         <div class="document-link">
-          <a href="${url}" target="_blank" class="btn-link">View Document</a>
+          <a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="btn-link" data-external-link="true">View Document</a>
         </div>
       `;
     }
   }
 
-  private handleVerification(): void {
+  private async handleVerification(): Promise<void> {
     const statusSelect = document.getElementById('verification-status') as HTMLSelectElement;
     const notesTextarea = document.getElementById('verification-notes') as HTMLTextAreaElement;
     const errorDiv = document.getElementById('verification-error');
@@ -348,8 +342,7 @@ export class CarOwnerDetailPage {
     if (!statusSelect || !notesTextarea || !errorDiv || !successDiv) return;
 
     const verificationStatus = statusSelect.value;
-    // Notes will be used when connecting to real API
-    void notesTextarea.value.trim();
+    const notes = notesTextarea.value.trim();
 
     if (!verificationStatus) {
       errorDiv.textContent = 'Please select a verification status';
@@ -362,9 +355,18 @@ export class CarOwnerDetailPage {
     errorDiv.style.display = 'none';
     successDiv.style.display = 'none';
 
-    // Mock API call - will be replaced with real API
-    setTimeout(() => {
-      successDiv.textContent = `Car owner verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
+    // Call API
+    const result = await adminApi.verifyCarOwner(this.carOwnerId, verificationStatus, notes);
+
+    if (result.error) {
+      errorDiv.textContent = result.error;
+      errorDiv.style.display = 'block';
+      successDiv.style.display = 'none';
+      return;
+    }
+
+    if (result.data) {
+      successDiv.textContent = result.data.message || `Car owner verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
       successDiv.style.display = 'block';
       
       // Update the status badge
@@ -377,7 +379,7 @@ export class CarOwnerDetailPage {
       setTimeout(() => {
         this.loadCarOwnerDetail();
       }, 1500);
-    }, 500);
+    }
   }
 
   private setElementText(id: string, text: string): void {

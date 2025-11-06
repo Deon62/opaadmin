@@ -1,5 +1,7 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
+import { getDocumentUrl } from '../config/api';
 
 interface ClientDetail {
   id: number;
@@ -277,54 +279,36 @@ export class ClientDetailPage {
     // ID Verification form
     const idVerificationForm = document.getElementById('id-verification-form') as HTMLFormElement;
     if (idVerificationForm) {
-      idVerificationForm.addEventListener('submit', (e) => {
+      idVerificationForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        this.handleIDVerification();
+        await this.handleIDVerification();
       });
     }
 
     // DL Verification form
     const dlVerificationForm = document.getElementById('dl-verification-form') as HTMLFormElement;
     if (dlVerificationForm) {
-      dlVerificationForm.addEventListener('submit', (e) => {
+      dlVerificationForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        this.handleDLVerification();
+        await this.handleDLVerification();
       });
     }
   }
 
-  private loadClientDetail(): void {
-    // Mock data - will be replaced with API call
-    const mockClient: ClientDetail = {
-      id: this.clientId,
-      user_id: 20,
-      email: 'client1@example.com',
-      first_name: 'Alice',
-      last_name: 'Williams',
-      phone_number: '+1234567890',
-      date_of_birth: '1992-03-20',
-      gender: 'female',
-      location: 'New York',
-      address: '123 Main St, New York, NY 10001',
-      id_number: 'ID123456',
-      id_document_url: 'https://example.com/id-doc.jpg',
-      profile_picture_url: 'https://example.com/profile.jpg',
-      dl_number: 'DL789012',
-      dl_category: 'B',
-      dl_issue_date: '2020-01-10',
-      dl_expiry_date: '2025-01-10',
-      dl_document_url: 'https://example.com/dl-doc.jpg',
-      verification_status: 'verified',
-      dl_verification_status: 'pending',
-      profile_completeness: 95.0,
-      created_at: '2024-01-15T10:30:00Z',
-      updated_at: '2024-01-20T14:20:00Z'
-    };
+  private async loadClientDetail(): Promise<void> {
+    const result = await adminApi.getClientDetail(this.clientId);
+    
+    if (result.error) {
+      const loadingState = document.getElementById('loading-state');
+      if (loadingState) {
+        loadingState.innerHTML = `<div class="empty-state">Error: ${result.error}</div>`;
+      }
+      return;
+    }
 
-    // Simulate API delay
-    setTimeout(() => {
-      this.renderClientDetail(mockClient);
-    }, 500);
+    if (result.data) {
+      this.renderClientDetail(result.data as ClientDetail);
+    }
   }
 
   private renderClientDetail(client: ClientDetail): void {
@@ -419,20 +403,26 @@ export class ClientDetailPage {
       return;
     }
 
+    const fullUrl = getDocumentUrl(url);
+    if (!fullUrl) {
+      container.innerHTML = '<div class="no-document">Invalid document URL</div>';
+      return;
+    }
+
     if (isImage) {
       container.innerHTML = `
-        <img src="${url}" alt="${label}" class="document-image" onerror="this.parentElement.innerHTML='<div class=\\'no-document\\'>Failed to load image</div>'">
+        <img src="${fullUrl}" alt="${label}" class="document-image" onerror="this.parentElement.innerHTML='<div class=\\'no-document\\'>Failed to load image</div>'">
       `;
     } else {
       container.innerHTML = `
         <div class="document-link">
-          <a href="${url}" target="_blank" class="btn-link">View Document</a>
+          <a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="btn-link" data-external-link="true">View Document</a>
         </div>
       `;
     }
   }
 
-  private handleIDVerification(): void {
+  private async handleIDVerification(): Promise<void> {
     const statusSelect = document.getElementById('id-verification-status') as HTMLSelectElement;
     const notesTextarea = document.getElementById('id-verification-notes') as HTMLTextAreaElement;
     const errorDiv = document.getElementById('id-verification-error');
@@ -441,8 +431,7 @@ export class ClientDetailPage {
     if (!statusSelect || !notesTextarea || !errorDiv || !successDiv) return;
 
     const verificationStatus = statusSelect.value;
-    // Notes will be used when connecting to real API
-    void notesTextarea.value.trim();
+    const notes = notesTextarea.value.trim();
 
     if (!verificationStatus) {
       errorDiv.textContent = 'Please select a verification status';
@@ -455,9 +444,19 @@ export class ClientDetailPage {
     errorDiv.style.display = 'none';
     successDiv.style.display = 'none';
 
-    // Mock API call - will be replaced with real API
-    setTimeout(() => {
-      successDiv.textContent = `Client ID verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
+    // Call API
+    const result = await adminApi.verifyClientID(this.clientId, verificationStatus, notes);
+
+    if (result.error) {
+      errorDiv.textContent = result.error;
+      errorDiv.style.display = 'block';
+      successDiv.style.display = 'none';
+      return;
+    }
+
+    if (result.data) {
+      const message = (result.data as any).message;
+      successDiv.textContent = message || `Client ID verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
       successDiv.style.display = 'block';
       
       // Update the status badge
@@ -470,10 +469,10 @@ export class ClientDetailPage {
       setTimeout(() => {
         this.loadClientDetail();
       }, 1500);
-    }, 500);
+    }
   }
 
-  private handleDLVerification(): void {
+  private async handleDLVerification(): Promise<void> {
     const statusSelect = document.getElementById('dl-verification-status') as HTMLSelectElement;
     const notesTextarea = document.getElementById('dl-verification-notes') as HTMLTextAreaElement;
     const errorDiv = document.getElementById('dl-verification-error');
@@ -482,8 +481,7 @@ export class ClientDetailPage {
     if (!statusSelect || !notesTextarea || !errorDiv || !successDiv) return;
 
     const verificationStatus = statusSelect.value;
-    // Notes will be used when connecting to real API
-    void notesTextarea.value.trim();
+    const notes = notesTextarea.value.trim();
 
     if (!verificationStatus) {
       errorDiv.textContent = 'Please select a verification status';
@@ -496,9 +494,19 @@ export class ClientDetailPage {
     errorDiv.style.display = 'none';
     successDiv.style.display = 'none';
 
-    // Mock API call - will be replaced with real API
-    setTimeout(() => {
-      successDiv.textContent = `Client DL verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
+    // Call API
+    const result = await adminApi.verifyClientDL(this.clientId, verificationStatus, notes);
+
+    if (result.error) {
+      errorDiv.textContent = result.error;
+      errorDiv.style.display = 'block';
+      successDiv.style.display = 'none';
+      return;
+    }
+
+    if (result.data) {
+      const message = (result.data as any).message;
+      successDiv.textContent = message || `Client DL verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
       successDiv.style.display = 'block';
       
       // Update the status badge
@@ -511,7 +519,7 @@ export class ClientDetailPage {
       setTimeout(() => {
         this.loadClientDetail();
       }, 1500);
-    }, 500);
+    }
   }
 
   private setElementText(id: string, text: string): void {

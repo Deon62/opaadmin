@@ -1,4 +1,5 @@
 import { Layout } from '../components/layout';
+import { adminApi } from '../services/api';
 
 export class DashboardPage {
   private layout: Layout;
@@ -226,24 +227,32 @@ export class DashboardPage {
     }
   }
 
-  private loadDashboardData(): void {
-    // Placeholder data - will be replaced with API call later
-    const mockData = {
-      total_users: 0,
-      total_drivers: 0,
-      total_clients: 0,
-      total_car_owners: 0,
-      total_admins: 0,
-      pending_verifications: 0,
-      verified_users: 0,
-      rejected_users: 0,
-      recent_registrations_7d: 0,
-      recent_registrations_30d: 0,
-      active_users: 0
-    };
+  private async loadDashboardData(): Promise<void> {
+    const result = await adminApi.getDashboard();
+    
+    if (result.error) {
+      console.error('Failed to load dashboard data:', result.error);
+      // Show error or use default values
+      const defaultData = {
+        total_users: 0,
+        total_drivers: 0,
+        total_clients: 0,
+        total_car_owners: 0,
+        total_admins: 0,
+        pending_verifications: 0,
+        verified_users: 0,
+        rejected_users: 0,
+        recent_registrations_7d: 0,
+        recent_registrations_30d: 0,
+        active_users: 0
+      };
+      this.updateStats(defaultData);
+      return;
+    }
 
-    // Update UI with mock data (will be replaced with real API call)
-    this.updateStats(mockData);
+    if (result.data) {
+      this.updateStats(result.data);
+    }
     
     // Re-render chart after a short delay to ensure canvas is ready
     setTimeout(() => {

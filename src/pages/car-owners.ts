@@ -1,5 +1,6 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
 
 interface CarOwner {
   id: number;
@@ -108,10 +109,10 @@ export class CarOwnersPage {
       let searchTimeout: number;
       searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
-        searchTimeout = window.setTimeout(() => {
+        searchTimeout = window.setTimeout(async () => {
           this.searchQuery = (e.target as HTMLInputElement).value.trim();
           this.currentPage = 1;
-          this.loadCarOwners();
+          await this.loadCarOwners();
         }, 300);
       });
     }
@@ -119,10 +120,10 @@ export class CarOwnersPage {
     // Verification status filter
     const verificationFilter = document.getElementById('verification-filter') as HTMLSelectElement;
     if (verificationFilter) {
-      verificationFilter.addEventListener('change', (e) => {
+      verificationFilter.addEventListener('change', async (e) => {
         this.verificationStatusFilter = (e.target as HTMLSelectElement).value;
         this.currentPage = 1;
-        this.loadCarOwners();
+        await this.loadCarOwners();
       });
     }
 
@@ -131,87 +132,54 @@ export class CarOwnersPage {
     const nextBtn = document.getElementById('next-page');
     
     if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
+      prevBtn.addEventListener('click', async () => {
         if (this.currentPage > 1) {
           this.currentPage--;
-          this.loadCarOwners();
+          await this.loadCarOwners();
         }
       });
     }
 
     if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
+      nextBtn.addEventListener('click', async () => {
         this.currentPage++;
-        this.loadCarOwners();
+        await this.loadCarOwners();
       });
     }
   }
 
-  private loadCarOwners(): void {
+  private async loadCarOwners(): Promise<void> {
     const tbody = document.getElementById('car-owners-tbody');
     if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="11" class="loading-state">Loading car owners...</td></tr>';
 
-    // Mock data - will be replaced with API call
-    const mockCarOwners: CarOwner[] = [
-      {
-        id: 1,
-        user_id: 30,
-        email: 'owner1@example.com',
-        first_name: 'Michael',
-        last_name: 'Johnson',
-        phone_number: '+1234567890',
-        id_number: 'ID123456',
-        verification_status: 'verified',
-        has_id_document: true,
-        business_name: 'Johnson Car Rentals',
-        total_vehicles: 5,
-        profile_completeness: 100.0,
-        created_at: '2024-01-15T10:30:00Z'
-      },
-      {
-        id: 2,
-        user_id: 31,
-        email: 'owner2@example.com',
-        first_name: 'Sarah',
-        last_name: 'Davis',
-        phone_number: '+1234567891',
-        id_number: 'ID123457',
-        verification_status: 'pending',
-        has_id_document: true,
-        business_name: 'Davis Auto Services',
-        total_vehicles: 3,
-        profile_completeness: 85.0,
-        created_at: '2024-01-16T14:20:00Z'
-      },
-      {
-        id: 3,
-        user_id: 32,
-        email: 'owner3@example.com',
-        first_name: 'David',
-        last_name: 'Wilson',
-        phone_number: '+1234567892',
-        id_number: 'ID123458',
-        verification_status: 'rejected',
-        has_id_document: true,
-        business_name: null,
-        total_vehicles: 1,
-        profile_completeness: 70.0,
-        created_at: '2024-01-17T09:15:00Z'
-      }
-    ];
+    // Calculate skip for pagination
+    const skip = (this.currentPage - 1) * this.pageSize;
 
-    // Apply filters
-    let filteredCarOwners = mockCarOwners;
+    // Call API
+    const result = await adminApi.getCarOwners({
+      verification_status: this.verificationStatusFilter || undefined,
+      skip,
+      limit: this.pageSize,
+    });
 
-    if (this.verificationStatusFilter) {
-      filteredCarOwners = filteredCarOwners.filter(co => co.verification_status === this.verificationStatusFilter);
+    if (result.error) {
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Error: ${result.error}</td></tr>`;
+      return;
     }
 
+    if (!result.data) {
+      tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No car owners found</td></tr>';
+      return;
+    }
+
+    let carOwners: CarOwner[] = result.data;
+
+    // Apply client-side search filter if needed
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filteredCarOwners = filteredCarOwners.filter(co => {
+      carOwners = carOwners.filter(co => {
         const fullName = `${co.first_name} ${co.last_name}`.toLowerCase();
         const businessName = (co.business_name || '').toLowerCase();
         return (
@@ -225,23 +193,22 @@ export class CarOwnersPage {
       });
     }
 
-    // Pagination
-    const totalCarOwners = filteredCarOwners.length;
-    const totalPages = Math.ceil(totalCarOwners / this.pageSize);
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    const endIndex = Math.min(startIndex + this.pageSize, totalCarOwners);
-    const paginatedCarOwners = filteredCarOwners.slice(startIndex, endIndex);
-
     // Update pagination info
-    this.updatePaginationInfo(startIndex + 1, endIndex, totalCarOwners, totalPages);
+    const hasMore = carOwners.length === this.pageSize;
+    const totalPages = hasMore ? this.currentPage + 1 : this.currentPage;
+    const startIndex = skip + 1;
+    const endIndex = skip + carOwners.length;
+    const totalCarOwners = hasMore ? endIndex + 1 : endIndex;
+
+    this.updatePaginationInfo(startIndex, endIndex, totalCarOwners, totalPages);
 
     // Render car owners
-    if (paginatedCarOwners.length === 0) {
+    if (carOwners.length === 0) {
       tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No car owners found</td></tr>';
       return;
     }
 
-    tbody.innerHTML = paginatedCarOwners.map(owner => `
+    tbody.innerHTML = carOwners.map(owner => `
       <tr>
         <td>${owner.id}</td>
         <td>${owner.first_name} ${owner.last_name}</td>

@@ -1,5 +1,7 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
+import { getDocumentUrl } from '../config/api';
 
 interface VehicleDetail {
   id: number;
@@ -269,9 +271,9 @@ export class VehicleDetailPage {
     // Verification form
     const verificationForm = document.getElementById('verification-form') as HTMLFormElement;
     if (verificationForm) {
-      verificationForm.addEventListener('submit', (e) => {
+      verificationForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        this.handleVerification();
+        await this.handleVerification();
       });
     }
 
@@ -286,40 +288,20 @@ export class VehicleDetailPage {
     }
   }
 
-  private loadVehicleDetail(): void {
-    // Mock data - will be replaced with API call
-    const mockVehicle: VehicleDetail = {
-      id: this.vehicleId,
-      car_owner_id: 1,
-      owner_email: 'owner1@example.com',
-      owner_name: 'Michael Johnson',
-      make: 'Toyota',
-      model: 'Camry',
-      year: 2020,
-      plate_number: 'ABC-1234',
-      color: 'White',
-      vehicle_type: 'Sedan',
-      seating_capacity: 5,
-      fuel_type: 'Petrol',
-      transmission: 'Automatic',
-      mileage: 45000,
-      vin_number: '1HGBH41JXMN109186',
-      engine_capacity: '2.5L',
-      description: 'Well-maintained vehicle in excellent condition. Regular service history available.',
-      registration_document_url: 'https://example.com/registration.jpg',
-      insurance_document_url: 'https://example.com/insurance.jpg',
-      insurance_expiry_date: '2025-06-30',
-      registration_expiry_date: '2025-12-31',
-      documents_verification_status: 'pending',
-      listing_status: 'not_ready',
-      created_at: '2024-01-15T10:30:00Z',
-      updated_at: '2024-01-20T14:20:00Z'
-    };
+  private async loadVehicleDetail(): Promise<void> {
+    const result = await adminApi.getVehicleDetail(this.vehicleId);
+    
+    if (result.error) {
+      const loadingState = document.getElementById('loading-state');
+      if (loadingState) {
+        loadingState.innerHTML = `<div class="empty-state">Error: ${result.error}</div>`;
+      }
+      return;
+    }
 
-    // Simulate API delay
-    setTimeout(() => {
-      this.renderVehicleDetail(mockVehicle);
-    }, 500);
+    if (result.data) {
+      this.renderVehicleDetail(result.data as VehicleDetail);
+    }
   }
 
   private renderVehicleDetail(vehicle: VehicleDetail): void {
@@ -392,14 +374,20 @@ export class VehicleDetailPage {
       return;
     }
 
+    const fullUrl = getDocumentUrl(url);
+    if (!fullUrl) {
+      container.innerHTML = '<div class="no-document">Invalid document URL</div>';
+      return;
+    }
+
     container.innerHTML = `
       <div class="document-link">
-        <a href="${url}" target="_blank" class="btn-link">View Document</a>
+        <a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="btn-link" data-external-link="true">View Document</a>
       </div>
     `;
   }
 
-  private handleVerification(): void {
+  private async handleVerification(): Promise<void> {
     const statusSelect = document.getElementById('verification-status') as HTMLSelectElement;
     const notesTextarea = document.getElementById('verification-notes') as HTMLTextAreaElement;
     const errorDiv = document.getElementById('verification-error');
@@ -408,8 +396,7 @@ export class VehicleDetailPage {
     if (!statusSelect || !notesTextarea || !errorDiv || !successDiv) return;
 
     const verificationStatus = statusSelect.value;
-    // Notes will be used when connecting to real API
-    void notesTextarea.value.trim();
+    const notes = notesTextarea.value.trim();
 
     if (!verificationStatus) {
       errorDiv.textContent = 'Please select a verification status';
@@ -422,9 +409,20 @@ export class VehicleDetailPage {
     errorDiv.style.display = 'none';
     successDiv.style.display = 'none';
 
-    // Mock API call - will be replaced with real API
-    setTimeout(() => {
-      successDiv.textContent = `Vehicle documents verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
+    // Call API
+    const result = await adminApi.verifyVehicleDocuments(this.vehicleId, verificationStatus, notes);
+
+    if (result.error) {
+      errorDiv.textContent = result.error;
+      errorDiv.style.display = 'block';
+      successDiv.style.display = 'none';
+      return;
+    }
+
+    if (result.data) {
+      const data = result.data as any;
+      const message = data.message;
+      successDiv.textContent = message || `Vehicle documents verification status updated to ${this.formatVerificationStatus(verificationStatus)}`;
       successDiv.style.display = 'block';
       
       // Update the status badge
@@ -434,10 +432,11 @@ export class VehicleDetailPage {
       }
 
       // Update listing status if verified
-      if (verificationStatus === 'verified') {
+      if (verificationStatus === 'verified' && data.listing_status) {
         const listingBadge = document.getElementById('listing-status-badge');
         if (listingBadge) {
-          listingBadge.innerHTML = '<span class="badge badge-ready">Ready</span>';
+          const listingStatus = data.listing_status;
+          listingBadge.innerHTML = `<span class="badge badge-${listingStatus}">${this.formatListingStatus(listingStatus)}</span>`;
         }
       }
 
@@ -445,7 +444,7 @@ export class VehicleDetailPage {
       setTimeout(() => {
         this.loadVehicleDetail();
       }, 1500);
-    }, 500);
+    }
   }
 
   private setElementText(id: string, text: string): void {

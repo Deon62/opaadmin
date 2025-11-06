@@ -1,5 +1,6 @@
 import { Layout } from '../components/layout';
 import { Router } from '../router';
+import { adminApi } from '../services/api';
 
 interface Client {
   id: number;
@@ -107,10 +108,10 @@ export class ClientsPage {
       let searchTimeout: number;
       searchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
-        searchTimeout = window.setTimeout(() => {
+        searchTimeout = window.setTimeout(async () => {
           this.searchQuery = (e.target as HTMLInputElement).value.trim();
           this.currentPage = 1;
-          this.loadClients();
+          await this.loadClients();
         }, 300);
       });
     }
@@ -118,10 +119,10 @@ export class ClientsPage {
     // Verification status filter
     const verificationFilter = document.getElementById('verification-filter') as HTMLSelectElement;
     if (verificationFilter) {
-      verificationFilter.addEventListener('change', (e) => {
+      verificationFilter.addEventListener('change', async (e) => {
         this.verificationStatusFilter = (e.target as HTMLSelectElement).value;
         this.currentPage = 1;
-        this.loadClients();
+        await this.loadClients();
       });
     }
 
@@ -130,90 +131,54 @@ export class ClientsPage {
     const nextBtn = document.getElementById('next-page');
     
     if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
+      prevBtn.addEventListener('click', async () => {
         if (this.currentPage > 1) {
           this.currentPage--;
-          this.loadClients();
+          await this.loadClients();
         }
       });
     }
 
     if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
+      nextBtn.addEventListener('click', async () => {
         this.currentPage++;
-        this.loadClients();
+        await this.loadClients();
       });
     }
   }
 
-  private loadClients(): void {
+  private async loadClients(): Promise<void> {
     const tbody = document.getElementById('clients-tbody');
     if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="10" class="loading-state">Loading clients...</td></tr>';
 
-    // Mock data - will be replaced with API call
-    const mockClients: Client[] = [
-      {
-        id: 1,
-        user_id: 20,
-        email: 'client1@example.com',
-        first_name: 'Alice',
-        last_name: 'Williams',
-        phone_number: '+1234567890',
-        id_number: 'ID123456',
-        verification_status: 'verified',
-        dl_verification_status: 'verified',
-        has_id_document: true,
-        has_dl_document: true,
-        profile_completeness: 95.0,
-        created_at: '2024-01-15T10:30:00Z'
-      },
-      {
-        id: 2,
-        user_id: 21,
-        email: 'client2@example.com',
-        first_name: 'Bob',
-        last_name: 'Brown',
-        phone_number: '+1234567891',
-        id_number: 'ID123457',
-        verification_status: 'pending',
-        dl_verification_status: null,
-        has_id_document: true,
-        has_dl_document: false,
-        profile_completeness: 70.0,
-        created_at: '2024-01-16T14:20:00Z'
-      },
-      {
-        id: 3,
-        user_id: 22,
-        email: 'client3@example.com',
-        first_name: null,
-        last_name: null,
-        phone_number: null,
-        id_number: null,
-        verification_status: null,
-        dl_verification_status: null,
-        has_id_document: false,
-        has_dl_document: false,
-        profile_completeness: 20.0,
-        created_at: '2024-01-17T09:15:00Z'
-      }
-    ];
+    // Calculate skip for pagination
+    const skip = (this.currentPage - 1) * this.pageSize;
 
-    // Apply filters
-    let filteredClients = mockClients;
+    // Call API
+    const result = await adminApi.getClients({
+      verification_status: this.verificationStatusFilter || undefined,
+      skip,
+      limit: this.pageSize,
+    });
 
-    if (this.verificationStatusFilter) {
-      filteredClients = filteredClients.filter(c => 
-        c.verification_status === this.verificationStatusFilter || 
-        c.dl_verification_status === this.verificationStatusFilter
-      );
+    if (result.error) {
+      tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Error: ${result.error}</td></tr>`;
+      return;
     }
 
+    if (!result.data) {
+      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No clients found</td></tr>';
+      return;
+    }
+
+    let clients: Client[] = result.data;
+
+    // Apply client-side search filter if needed
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filteredClients = filteredClients.filter(c => {
+      clients = clients.filter(c => {
         const fullName = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase().trim();
         return (
           c.email.toLowerCase().includes(query) ||
@@ -225,23 +190,22 @@ export class ClientsPage {
       });
     }
 
-    // Pagination
-    const totalClients = filteredClients.length;
-    const totalPages = Math.ceil(totalClients / this.pageSize);
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    const endIndex = Math.min(startIndex + this.pageSize, totalClients);
-    const paginatedClients = filteredClients.slice(startIndex, endIndex);
-
     // Update pagination info
-    this.updatePaginationInfo(startIndex + 1, endIndex, totalClients, totalPages);
+    const hasMore = clients.length === this.pageSize;
+    const totalPages = hasMore ? this.currentPage + 1 : this.currentPage;
+    const startIndex = skip + 1;
+    const endIndex = skip + clients.length;
+    const totalClients = hasMore ? endIndex + 1 : endIndex;
+
+    this.updatePaginationInfo(startIndex, endIndex, totalClients, totalPages);
 
     // Render clients
-    if (paginatedClients.length === 0) {
+    if (clients.length === 0) {
       tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No clients found</td></tr>';
       return;
     }
 
-    tbody.innerHTML = paginatedClients.map(client => `
+    tbody.innerHTML = clients.map(client => `
       <tr>
         <td>${client.id}</td>
         <td>${this.formatName(client.first_name, client.last_name)}</td>

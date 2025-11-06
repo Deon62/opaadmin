@@ -1,4 +1,5 @@
 import { Layout } from '../components/layout';
+import { adminApi } from '../services/api';
 
 interface User {
   id: number;
@@ -209,9 +210,9 @@ export class UsersPage {
     }
 
     if (promoteForm) {
-      promoteForm.addEventListener('submit', (e) => {
+      promoteForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        this.handlePromoteUser();
+        await this.handlePromoteUser();
       });
     }
 
@@ -226,76 +227,61 @@ export class UsersPage {
     }
   }
 
-  private loadUsers(): void {
+  private async loadUsers(): Promise<void> {
     const tbody = document.getElementById('users-tbody');
     if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="6" class="loading-state">Loading users...</td></tr>';
 
-    // Mock data - will be replaced with API call
-    const mockUsers: User[] = [
-      {
-        id: 1,
-        email: 'user1@example.com',
-        role: 'driver',
-        status: 'verified',
-        is_active: true,
-        created_at: '2024-01-15T10:30:00Z'
-      },
-      {
-        id: 2,
-        email: 'user2@example.com',
-        role: 'client',
-        status: 'pending_verification',
-        is_active: true,
-        created_at: '2024-01-16T14:20:00Z'
-      },
-      {
-        id: 3,
-        email: 'user3@example.com',
-        role: 'car_owner',
-        status: 'verified',
-        is_active: true,
-        created_at: '2024-01-17T09:15:00Z'
-      }
-    ];
+    // Calculate skip for pagination
+    const skip = (this.currentPage - 1) * this.pageSize;
 
-    // Apply filters
-    let filteredUsers = mockUsers;
+    // Call API
+    const result = await adminApi.getUsers({
+      role: this.roleFilter || undefined,
+      status_filter: this.statusFilter || undefined,
+      skip,
+      limit: this.pageSize,
+    });
 
-    if (this.roleFilter) {
-      filteredUsers = filteredUsers.filter(u => u.role === this.roleFilter);
+    if (result.error) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Error: ${result.error}</td></tr>`;
+      return;
     }
 
-    if (this.statusFilter) {
-      filteredUsers = filteredUsers.filter(u => u.status === this.statusFilter);
+    if (!result.data) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users found</td></tr>';
+      return;
     }
 
+    let users: User[] = result.data;
+
+    // Apply client-side search filter if needed
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filteredUsers = filteredUsers.filter(u => 
+      users = users.filter(u => 
         u.email.toLowerCase().includes(query) || 
         u.id.toString().includes(query)
       );
     }
 
-    // Pagination
-    const totalUsers = filteredUsers.length;
-    const totalPages = Math.ceil(totalUsers / this.pageSize);
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    const endIndex = Math.min(startIndex + this.pageSize, totalUsers);
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+    // Update pagination info (using API results)
+    // Note: API doesn't return total count, so we'll estimate based on results
+    const hasMore = users.length === this.pageSize;
+    const totalPages = hasMore ? this.currentPage + 1 : this.currentPage;
+    const startIndex = skip + 1;
+    const endIndex = skip + users.length;
+    const totalUsers = hasMore ? endIndex + 1 : endIndex; // Estimate
 
-    // Update pagination info
-    this.updatePaginationInfo(startIndex + 1, endIndex, totalUsers, totalPages);
+    this.updatePaginationInfo(startIndex, endIndex, totalUsers, totalPages);
 
     // Render users
-    if (paginatedUsers.length === 0) {
+    if (users.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users found</td></tr>';
       return;
     }
 
-    tbody.innerHTML = paginatedUsers.map(user => `
+    tbody.innerHTML = users.map(user => `
       <tr>
         <td>${user.id}</td>
         <td>${user.email}</td>
@@ -364,7 +350,7 @@ export class UsersPage {
     }
   }
 
-  private handlePromoteUser(): void {
+  private async handlePromoteUser(): Promise<void> {
     const userIdInput = document.getElementById('user-id-input') as HTMLInputElement;
     const errorDiv = document.getElementById('promote-error');
     const successDiv = document.getElementById('promote-success');
@@ -385,10 +371,18 @@ export class UsersPage {
     errorDiv.style.display = 'none';
     successDiv.style.display = 'none';
 
-    // Mock API call - will be replaced with real API
-    setTimeout(() => {
-      // Simulate success
-      successDiv.textContent = `User ${userId} has been promoted to administrator`;
+    // Call API
+    const result = await adminApi.promoteUser(userId);
+
+    if (result.error) {
+      errorDiv.textContent = result.error;
+      errorDiv.style.display = 'block';
+      successDiv.style.display = 'none';
+      return;
+    }
+
+    if (result.data) {
+      successDiv.textContent = result.data.message || `User ${userId} has been promoted to administrator`;
       successDiv.style.display = 'block';
       
       // Reload users after 1.5 seconds
@@ -397,7 +391,7 @@ export class UsersPage {
         this.resetPromoteForm();
         this.loadUsers();
       }, 1500);
-    }, 500);
+    }
   }
 
   private resetPromoteForm(): void {

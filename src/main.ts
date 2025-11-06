@@ -17,6 +17,16 @@ const router = Router.getInstance();
 // Make router available globally for navigation
 (window as any).router = router;
 
+// Prevent router from intercepting external document links
+document.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement;
+  const link = target.closest('a[data-external-link="true"]') as HTMLAnchorElement;
+  if (link) {
+    // Allow the link to open normally (target="_blank" will handle it)
+    e.stopPropagation();
+  }
+}, true);
+
 // Register routes
 router.addRoute('/', () => {
   // Redirect to login if not authenticated
