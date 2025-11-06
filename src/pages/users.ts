@@ -1,5 +1,4 @@
 import { Layout } from '../components/layout';
-import { Router } from '../router';
 
 interface User {
   id: number;
@@ -12,7 +11,6 @@ interface User {
 
 export class UsersPage {
   private layout: Layout;
-  private router: Router;
   private currentPage: number = 1;
   private pageSize: number = 20;
   private roleFilter: string = '';
@@ -21,7 +19,6 @@ export class UsersPage {
 
   constructor() {
     this.layout = new Layout();
-    this.router = Router.getInstance();
   }
 
   render(): void {

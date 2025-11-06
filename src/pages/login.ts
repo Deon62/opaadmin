@@ -69,10 +69,8 @@ export class LoginPage {
       e.preventDefault();
       
       const emailInput = document.getElementById('email') as HTMLInputElement;
-      const passwordInput = document.getElementById('password') as HTMLInputElement;
       
       const email = emailInput.value.trim();
-      const password = passwordInput.value;
 
       // Hide error message
       errorMessage.style.display = 'none';

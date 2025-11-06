@@ -383,7 +383,7 @@ export class VehicleDetailPage {
     this.setElementText('insurance-expiry-date', this.formatDate(vehicle.insurance_expiry_date));
   }
 
-  private renderDocument(containerId: string, url: string | null, label: string): void {
+  private renderDocument(containerId: string, url: string | null, _label: string): void {
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -408,7 +408,8 @@ export class VehicleDetailPage {
     if (!statusSelect || !notesTextarea || !errorDiv || !successDiv) return;
 
     const verificationStatus = statusSelect.value;
-    const notes = notesTextarea.value.trim();
+    // Notes will be used when connecting to real API
+    void notesTextarea.value.trim();
 
     if (!verificationStatus) {
       errorDiv.textContent = 'Please select a verification status';

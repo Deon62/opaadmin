@@ -10,7 +10,6 @@ import { CarOwnersPage } from './pages/car-owners';
 import { CarOwnerDetailPage } from './pages/car-owner-detail';
 import { VehiclesPage } from './pages/vehicles';
 import { VehicleDetailPage } from './pages/vehicle-detail';
-import { Layout } from './components/layout';
 
 // Initialize router
 const router = Router.getInstance();

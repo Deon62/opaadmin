@@ -348,7 +348,8 @@ export class CarOwnerDetailPage {
     if (!statusSelect || !notesTextarea || !errorDiv || !successDiv) return;
 
     const verificationStatus = statusSelect.value;
-    const notes = notesTextarea.value.trim();
+    // Notes will be used when connecting to real API
+    void notesTextarea.value.trim();
 
     if (!verificationStatus) {
       errorDiv.textContent = 'Please select a verification status';
