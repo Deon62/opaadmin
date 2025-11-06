@@ -5,6 +5,7 @@ import { UsersPage } from './pages/users';
 import { DriversPage } from './pages/drivers';
 import { DriverDetailPage } from './pages/driver-detail';
 import { ClientsPage } from './pages/clients';
+import { ClientDetailPage } from './pages/client-detail';
 import { CarOwnersPage } from './pages/car-owners';
 import { VehiclesPage } from './pages/vehicles';
 import { Layout } from './components/layout';
@@ -93,6 +94,25 @@ router.addRoute('/clients', () => {
   }
   const clientsPage = new ClientsPage();
   clientsPage.render();
+});
+
+router.addRoute('/clients/:id', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const path = window.location.pathname;
+  const params = router.getRouteParams('/clients/:id', path);
+  const clientId = parseInt(params.id);
+  
+  if (isNaN(clientId)) {
+    router.navigate('/clients');
+    return;
+  }
+  
+  const clientDetailPage = new ClientDetailPage(clientId);
+  clientDetailPage.render();
 });
 
 router.addRoute('/car-owners', () => {

@@ -269,8 +269,7 @@ export class ClientsPage {
       btn.addEventListener('click', (e) => {
         const clientId = (e.target as HTMLElement).getAttribute('data-client-id');
         if (clientId) {
-          // Will navigate to client detail page when implemented
-          console.log('Navigate to client detail:', clientId);
+          this.router.navigate(`/clients/${clientId}`);
         }
       });
     });
