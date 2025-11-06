@@ -3,6 +3,7 @@ import { LoginPage } from './pages/login';
 import { DashboardPage } from './pages/dashboard';
 import { UsersPage } from './pages/users';
 import { DriversPage } from './pages/drivers';
+import { DriverDetailPage } from './pages/driver-detail';
 import { ClientsPage } from './pages/clients';
 import { CarOwnersPage } from './pages/car-owners';
 import { VehiclesPage } from './pages/vehicles';
@@ -63,6 +64,25 @@ router.addRoute('/drivers', () => {
   }
   const driversPage = new DriversPage();
   driversPage.render();
+});
+
+router.addRoute('/drivers/:id', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const path = window.location.pathname;
+  const params = router.getRouteParams('/drivers/:id', path);
+  const driverId = parseInt(params.id);
+  
+  if (isNaN(driverId)) {
+    router.navigate('/drivers');
+    return;
+  }
+  
+  const driverDetailPage = new DriverDetailPage(driverId);
+  driverDetailPage.render();
 });
 
 router.addRoute('/clients', () => {

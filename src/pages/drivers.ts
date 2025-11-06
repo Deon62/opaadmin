@@ -264,8 +264,7 @@ export class DriversPage {
       btn.addEventListener('click', (e) => {
         const driverId = (e.target as HTMLElement).getAttribute('data-driver-id');
         if (driverId) {
-          // Will navigate to driver detail page when implemented
-          console.log('Navigate to driver detail:', driverId);
+          this.router.navigate(`/drivers/${driverId}`);
         }
       });
     });
