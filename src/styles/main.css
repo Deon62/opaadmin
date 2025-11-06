@@ -333,6 +333,8 @@ body {
   overflow-x: hidden;
   width: calc(100% - 260px);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Mobile Top Navbar */
@@ -602,6 +604,8 @@ body {
   max-width: 100%;
   margin: 0 auto;
   overflow-x: hidden;
+  flex: 1;
+  min-height: 100%;
 }
 
 .page-header {
@@ -1411,8 +1415,8 @@ body {
 /* Analytics Pages Styles */
 .analytics-container {
   padding: 1rem;
-  max-height: calc(100vh - 60px);
-  overflow-y: auto;
+  flex: 1;
+  min-height: 100%;
 }
 
 .analytics-header {
