@@ -1099,6 +1099,34 @@ body {
   text-align: center;
 }
 
+.document-expiry {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+
+.document-expiry label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-right: 0.5rem;
+}
+
+.document-expiry span {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.description-text {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 1rem;
+  background: var(--background);
+  border-radius: 6px;
+  min-height: 60px;
+}
+
 /* Verification Section */
 .verification-section {
   grid-column: 1 / -1;

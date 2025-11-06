@@ -270,8 +270,7 @@ export class CarOwnersPage {
       btn.addEventListener('click', (e) => {
         const carOwnerId = (e.target as HTMLElement).getAttribute('data-car-owner-id');
         if (carOwnerId) {
-          // Will navigate to car owner detail page when implemented
-          console.log('Navigate to car owner detail:', carOwnerId);
+          this.router.navigate(`/car-owners/${carOwnerId}`);
         }
       });
     });

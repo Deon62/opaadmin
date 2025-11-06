@@ -259,8 +259,7 @@ export class VehiclesPage {
       btn.addEventListener('click', (e) => {
         const vehicleId = (e.target as HTMLElement).getAttribute('data-vehicle-id');
         if (vehicleId) {
-          // Will navigate to vehicle detail page when implemented
-          console.log('Navigate to vehicle detail:', vehicleId);
+          this.router.navigate(`/vehicles/${vehicleId}`);
         }
       });
     });

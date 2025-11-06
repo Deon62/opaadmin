@@ -7,7 +7,9 @@ import { DriverDetailPage } from './pages/driver-detail';
 import { ClientsPage } from './pages/clients';
 import { ClientDetailPage } from './pages/client-detail';
 import { CarOwnersPage } from './pages/car-owners';
+import { CarOwnerDetailPage } from './pages/car-owner-detail';
 import { VehiclesPage } from './pages/vehicles';
+import { VehicleDetailPage } from './pages/vehicle-detail';
 import { Layout } from './components/layout';
 
 // Initialize router
@@ -125,6 +127,25 @@ router.addRoute('/car-owners', () => {
   carOwnersPage.render();
 });
 
+router.addRoute('/car-owners/:id', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const path = window.location.pathname;
+  const params = router.getRouteParams('/car-owners/:id', path);
+  const carOwnerId = parseInt(params.id);
+  
+  if (isNaN(carOwnerId)) {
+    router.navigate('/car-owners');
+    return;
+  }
+  
+  const carOwnerDetailPage = new CarOwnerDetailPage(carOwnerId);
+  carOwnerDetailPage.render();
+});
+
 router.addRoute('/vehicles', () => {
   const token = localStorage.getItem('admin_token');
   if (!token) {
@@ -133,6 +154,25 @@ router.addRoute('/vehicles', () => {
   }
   const vehiclesPage = new VehiclesPage();
   vehiclesPage.render();
+});
+
+router.addRoute('/vehicles/:id', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const path = window.location.pathname;
+  const params = router.getRouteParams('/vehicles/:id', path);
+  const vehicleId = parseInt(params.id);
+  
+  if (isNaN(vehicleId)) {
+    router.navigate('/vehicles');
+    return;
+  }
+  
+  const vehicleDetailPage = new VehicleDetailPage(vehicleId);
+  vehicleDetailPage.render();
 });
 
 // Start router
