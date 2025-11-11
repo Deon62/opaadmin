@@ -7,6 +7,7 @@ export class RevenueAnalyticsPage {
   private revenueData: any = null;
   private dailyData: any[] = [];
   private breakdownData: any = null;
+  private commissionData: any = null;
 
   constructor() {
     this.layout = new Layout();
@@ -48,6 +49,44 @@ export class RevenueAnalyticsPage {
           <div class="analytics-card">
             <div class="analytics-card-label">Avg Rental Value</div>
             <div class="analytics-card-value" id="avg-rental-value">-</div>
+          </div>
+        </div>
+
+        <!-- Commission Overview Section -->
+        <div class="analytics-section">
+          <div class="section-header">
+            <h2>Commission Overview (Drivers + Car Owners)</h2>
+            <a href="/analytics/commissions" class="btn-link">View Details →</a>
+          </div>
+          <div class="analytics-cards-grid">
+            <div class="analytics-card">
+              <div class="analytics-card-label">Total Commission Earned</div>
+              <div class="analytics-card-value" id="total-commission">-</div>
+            </div>
+            <div class="analytics-card">
+              <div class="analytics-card-label">Net Revenue</div>
+              <div class="analytics-card-value" id="net-revenue">-</div>
+              <div class="analytics-card-subtitle">(After Commission)</div>
+            </div>
+            <div class="analytics-card">
+              <div class="analytics-card-label">Pending Commissions</div>
+              <div class="analytics-card-value" id="pending-commissions">-</div>
+              <div class="analytics-card-subtitle" id="pending-count">-</div>
+            </div>
+            <div class="analytics-card">
+              <div class="analytics-card-label">Paid Commissions</div>
+              <div class="analytics-card-value" id="paid-commissions">-</div>
+              <div class="analytics-card-subtitle" id="paid-count">-</div>
+            </div>
+            <div class="analytics-card card-warning">
+              <div class="analytics-card-label">Defaulted Commissions</div>
+              <div class="analytics-card-value" id="defaulted-commissions">-</div>
+              <div class="analytics-card-subtitle" id="defaulted-count">-</div>
+            </div>
+            <div class="analytics-card">
+              <div class="analytics-card-label">Average Commission</div>
+              <div class="analytics-card-value" id="avg-commission">-</div>
+            </div>
           </div>
         </div>
 
@@ -134,7 +173,8 @@ export class RevenueAnalyticsPage {
     await Promise.all([
       this.loadRevenueData(),
       this.loadDailyData(),
-      this.loadBreakdownData()
+      this.loadBreakdownData(),
+      this.loadCommissionData()
     ]);
   }
 
@@ -175,6 +215,18 @@ export class RevenueAnalyticsPage {
     }
   }
 
+  private async loadCommissionData(): Promise<void> {
+    const result = await adminApi.getCommissionAnalytics();
+    if (result.error) {
+      console.error('Failed to load commission data:', result.error);
+      return;
+    }
+    if (result.data) {
+      this.commissionData = result.data;
+      this.updateCommissionCards();
+    }
+  }
+
   private updateRevenueCards(): void {
     if (!this.revenueData) return;
 
@@ -194,6 +246,31 @@ export class RevenueAnalyticsPage {
     setValue('revenue-1y', this.revenueData.revenue_1y || 0);
     setValue('avg-booking-value', this.revenueData.average_booking_value || 0);
     setValue('avg-rental-value', this.revenueData.average_rental_value || 0);
+  }
+
+  private updateCommissionCards(): void {
+    if (!this.commissionData) return;
+
+    const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(value);
+    };
+
+    const setValue = (id: string, value: number | string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = typeof value === 'number' ? formatCurrency(value) : value;
+    };
+
+    setValue('total-commission', this.commissionData.total_commission_earned || 0);
+    setValue('net-revenue', (this.revenueData?.total_revenue || 0) - (this.commissionData.total_commission_earned || 0));
+    setValue('pending-commissions', this.commissionData.total_pending_commissions || 0);
+    setValue('paid-commissions', this.commissionData.total_paid_commissions || 0);
+    setValue('defaulted-commissions', this.commissionData.total_defaulted_commissions || 0);
+    setValue('avg-commission', this.commissionData.average_commission || 0);
+    
+    // Update counts
+    setValue('pending-count', `${this.commissionData.pending_commissions_count || 0} pending`);
+    setValue('paid-count', `${this.commissionData.paid_commissions_count || 0} paid`);
+    setValue('defaulted-count', `${this.commissionData.defaulted_commissions_count || 0} defaulted`);
   }
 
   private renderPieCharts(): void {

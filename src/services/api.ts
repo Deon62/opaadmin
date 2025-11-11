@@ -368,5 +368,94 @@ export const adminApi = {
       method: 'GET',
     });
   },
+
+  // Commission Management (Unified - Drivers + Car Owners)
+  getCommissionAnalytics: async () => {
+    return apiRequest(API_ENDPOINTS.COMMISSION_ANALYTICS, {
+      method: 'GET',
+    });
+  },
+
+  getCommissionBreakdown: async (params?: {
+    status_filter?: string;
+    rental_type_filter?: string;
+    skip?: number;
+    limit?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status_filter) queryParams.append('status_filter', params.status_filter);
+    if (params?.rental_type_filter) queryParams.append('rental_type_filter', params.rental_type_filter);
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    return apiRequest(API_ENDPOINTS.COMMISSION_BREAKDOWN(queryString), {
+      method: 'GET',
+    });
+  },
+
+  getPendingCommissions: async (params?: {
+    skip?: number;
+    limit?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    return apiRequest(API_ENDPOINTS.PENDING_COMMISSIONS(queryString), {
+      method: 'GET',
+    });
+  },
+
+  getDefaultedCommissions: async (params?: {
+    skip?: number;
+    limit?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    return apiRequest(API_ENDPOINTS.DEFAULTED_COMMISSIONS(queryString), {
+      method: 'GET',
+    });
+  },
+
+  approveCarOwnerCommission: async (commissionId: number, approvedAmount: number, notes?: string) => {
+    return apiRequest(API_ENDPOINTS.APPROVE_CAR_OWNER_COMMISSION(commissionId), {
+      method: 'POST',
+      body: JSON.stringify({
+        approved_amount: approvedAmount,
+        notes: notes || null,
+      }),
+    });
+  },
+
+  approveDriverCommission: async (commissionId: number, approvedAmount: number, notes?: string) => {
+    return apiRequest(API_ENDPOINTS.APPROVE_DRIVER_COMMISSION(commissionId), {
+      method: 'POST',
+      body: JSON.stringify({
+        approved_amount: approvedAmount,
+        notes: notes || null,
+      }),
+    });
+  },
+
+  getCarOwnerCommissions: async (carOwnerId: number, params?: {
+    status_filter?: string;
+    skip?: number;
+    limit?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status_filter) queryParams.append('status_filter', params.status_filter);
+    if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
+    if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+
+    const queryString = queryParams.toString();
+    return apiRequest(API_ENDPOINTS.CAR_OWNER_COMMISSIONS(carOwnerId, queryString), {
+      method: 'GET',
+    });
+  },
 };
 

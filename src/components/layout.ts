@@ -85,6 +85,10 @@ export class Layout {
                 <span class="nav-text">Top Performers</span>
               </a>
               
+              <a href="#" data-route="/analytics/commissions" class="nav-item ${this.isActive('/analytics/commissions') ? 'active' : ''}">
+                <span class="nav-text">Commission Management</span>
+              </a>
+              
               <a href="#" data-route="/bookings" class="nav-item ${this.isActive('/bookings') ? 'active' : ''}">
                 <span class="nav-text">Bookings Management</span>
               </a>

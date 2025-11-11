@@ -73,5 +73,14 @@ export const API_ENDPOINTS = {
   // Bookings Management
   ADMIN_BOOKINGS: (params?: string) => `/admin/bookings${params ? `?${params}` : ''}`,
   ADMIN_BOOKING_DETAIL: (id: number) => `/admin/bookings/${id}`,
+  
+  // Commissions (Unified - Drivers + Car Owners)
+  COMMISSION_ANALYTICS: '/admin/analytics/commissions',
+  COMMISSION_BREAKDOWN: (params?: string) => `/admin/analytics/commissions/breakdown${params ? `?${params}` : ''}`,
+  PENDING_COMMISSIONS: (params?: string) => `/admin/commissions/pending${params ? `?${params}` : ''}`,
+  DEFAULTED_COMMISSIONS: (params?: string) => `/admin/commissions/defaulted${params ? `?${params}` : ''}`,
+  APPROVE_CAR_OWNER_COMMISSION: (id: number) => `/admin/commissions/${id}/approve`,
+  APPROVE_DRIVER_COMMISSION: (id: number) => `/admin/driver-commissions/${id}/approve`,
+  CAR_OWNER_COMMISSIONS: (carOwnerId: number, params?: string) => `/admin/car-owners/${carOwnerId}/commissions${params ? `?${params}` : ''}`,
 };
 

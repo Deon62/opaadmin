@@ -15,6 +15,7 @@ import { BookingsAnalyticsPage } from './pages/bookings-analytics';
 import { PerformanceMetricsPage } from './pages/performance-metrics';
 import { TopPerformersPage } from './pages/top-performers';
 import { BookingsManagementPage } from './pages/bookings-management';
+import { CommissionManagementPage } from './pages/commission-management';
 
 // Initialize router
 const router = Router.getInstance();
@@ -239,6 +240,17 @@ router.addRoute('/bookings', () => {
   }
   const bookingsManagementPage = new BookingsManagementPage();
   bookingsManagementPage.render();
+});
+
+// Commission Management Route
+router.addRoute('/analytics/commissions', () => {
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    router.navigate('/login');
+    return;
+  }
+  const commissionManagementPage = new CommissionManagementPage();
+  commissionManagementPage.render();
 });
 
 // Start router
